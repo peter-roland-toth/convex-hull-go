@@ -2,8 +2,8 @@ package main
 
 import (
 	"sort"
-	"math"
-	// "fmt"
+	// "math"
+	"fmt"
 	// "encoding/json"
 	// "io/ioutil"
 )
@@ -13,10 +13,18 @@ type Point struct {
 	Y float64 `json:"y"`
 }
 
+type Polygon struct {
+	left Point
+	left_index int
+	right Point
+	right_index int
+	points []Point
+}
+
 // Returns the convex hull of the set of points provided in the input
 func Calculate_hull(p []Point) []Point {
 	points := preprocess(p)
-	hull := convex_hull(points)
+	hull := convex_hull(points).points
 	
 	return hull
 }
@@ -45,6 +53,8 @@ func preprocess(p []Point) []Point {
 		}
 	}
 
+	fmt.Println(len(result))
+
 	return result
 }
 
@@ -52,9 +62,12 @@ func preprocess(p []Point) []Point {
 // The convex hull is the smallest polygon that cointains all
 // the points sent to the method.
 // The method assumes that the input is sorted along the X-axis
-func convex_hull(p []Point) []Point {
-	if len(p) <= 1 {
-		return p
+func convex_hull(p []Point) Polygon {
+	if len(p) == 0 {
+		return Polygon{Point{0.0, 0.0}, 0, Point{0.0, 0.0}, 0, []Point{}}
+	}
+	if len(p) == 1 {
+		return Polygon{p[0], 0, p[0], 0, p}
 	}
 
 	// partitioning the points into a left and right region
@@ -83,35 +96,40 @@ func partition(p []Point) ([]Point, []Point) {
 // It assumes that the two input polygons are sorted clockwise
 // The returned polygon is also sorted clockwise
 // This algorithm has O(n) complexity
-func merge(p1, p2 []Point) []Point {
+func merge(p1, p2 Polygon) Polygon {
 	// if one of the input arrays is empty, we just return the other one
-	if len(p1) == 0 {
+	if len(p1.points) == 0 {
 		return p2
 	}
 
-	if len(p2) == 0 {
+	if len(p2.points) == 0 {
 		return p1
 	}
 
 	// finding the rightmost point from the left region, 
 	// and the leftmost point from the right region
-	max_i := -math.MaxFloat64
-	min_j := math.MaxFloat64
-	best_i, best_j := 0, 0
+	// max_i := -math.MaxFloat64
+	// min_j := math.MaxFloat64
+	// best_i, best_j := 0, 0
 
-	for i := 0; i < len(p1); i++ {
-		if p1[i].X > max_i {
-			max_i = p1[i].X
-			best_i = i
-		}
-	}
+	// for i := 0; i < len(p1); i++ {
+	// 	if p1[i].X > max_i {
+	// 		max_i = p1[i].X
+	// 		best_i = i
+	// 	}
+	// }
 
-	for j := 0; j < len(p2); j++ {
-		if p2[j].X < min_j {
-			min_j = p2[j].X
-			best_j = j
-		}
-	}
+	// for j := 0; j < len(p2); j++ {
+	// 	if p2[j].X < min_j {
+	// 		min_j = p2[j].X
+	// 		best_j = j
+	// 	}
+	// }
+
+	max_i := p1.right.X
+	min_j := p2.left.X
+	i := p1.right_index
+	j := p2.left_index
 
 	// calculating the position of the vertical line between the two regions
 	// it doesn't have to be exactly in the middle, but it's important that none
@@ -119,7 +137,7 @@ func merge(p1, p2 []Point) []Point {
 	// the upper and lower tangents below.
 	x := (min_j + max_i) / 2.0
 
-	i, j := best_i, best_j
+	// i, j := best_i, best_j
 
 	// calculating the upper tangent between the two regions. The idea is that we start
 	// from the closest points to the middle line calculated before, and going "upwards"
@@ -136,13 +154,16 @@ func merge(p1, p2 []Point) []Point {
 	//
 	// in this case the algorithm would start from l0 and r0 respectively and would find
 	// the l1-r2 line
-	for {
-		prev_i := (((i-1) % len(p1)) + len(p1)) % len(p1)
-		next_j := (j+1) % len(p2)
+	p1_points := p1.points
+	p2_points := p2.points
 
-		if y_value(p1[prev_i], p2[j], x) > y_value(p1[i], p2[j], x) {
+	for {
+		prev_i := (((i-1) % len(p1_points)) + len(p1_points)) % len(p1_points)
+		next_j := (j+1) % len(p2_points)
+
+		if y_value(p1_points[prev_i], p2_points[j], x) > y_value(p1_points[i], p2_points[j], x) {
 			i = prev_i
-		} else if y_value(p1[i], p2[next_j], x) > y_value(p1[i], p2[j], x) {
+		} else if y_value(p1_points[i], p2_points[next_j], x) > y_value(p1_points[i], p2_points[j], x) {
 			j = next_j
 		} else {
 			break
@@ -150,17 +171,17 @@ func merge(p1, p2 []Point) []Point {
 	}
 
 	upper_i, upper_j := i, j
-	i, j = best_i, best_j
+	i, j = p1.right_index, p2.left_index
 	
 	// same as above but here we find the lower tangent, going clockwise on the left side
 	// now and counter-clockwise on the right side, to find the minimum Y value on the middle line
 	for {
-		next_i := (i+1) % len(p1)
-		prev_j := (((j-1) % len(p2)) + len(p2)) % len(p2)
+		next_i := (i+1) % len(p1_points)
+		prev_j := (((j-1) % len(p2_points)) + len(p2_points)) % len(p2_points)
 
-		if y_value(p1[next_i], p2[j], x) < y_value(p1[i], p2[j], x) {
+		if y_value(p1_points[next_i], p2_points[j], x) < y_value(p1_points[i], p2_points[j], x) {
 			i = next_i
-		} else if y_value(p1[i], p2[prev_j], x) < y_value(p1[i], p2[j], x) {
+		} else if y_value(p1_points[i], p2_points[prev_j], x) < y_value(p1_points[i], p2_points[j], x) {
 			j = prev_j
 		} else {
 			break
@@ -172,36 +193,36 @@ func merge(p1, p2 []Point) []Point {
 	// merging the two regions. First we add the upper tangent, then we go clockwise on the right
 	// side until we find the point where we can add the lower tangent. Then we countinue clockwise
 	// on the left side until we reach the starting point
-	result := []Point{p1[upper_i], p2[upper_j]}
+	result := []Point{p1_points[upper_i], p2_points[upper_j]}
+	left := p1_points[upper_i]
+	left_index := 0
+	right := p2_points[upper_j]
+	right_index := 1
 
 	for upper_j != lower_j {
-		upper_j = (upper_j + 1) % len(p2)
-		result = append(result, p2[upper_j])
+		upper_j = (upper_j + 1) % len(p2_points)
+		result = append(result, p2_points[upper_j])
+
+		if p2_points[upper_j].X > right.X {
+			right = p2_points[upper_j]
+			right_index = len(result) - 1
+		}
 	}
 
 	for lower_i != upper_i {
-		result = append(result, p1[lower_i])
-		lower_i = (lower_i + 1) % len(p1)
+		result = append(result, p1_points[lower_i])
+
+		if p1_points[lower_i].X < left.X {
+			left = p1_points[lower_i]
+			left_index = len(result) - 1
+		}
+
+		lower_i = (lower_i + 1) % len(p1_points)		
 	}
 
-	return result
-}
+	poly := Polygon{left, left_index, right, right_index, result}
 
-// Calculates the area of a polygon. It assumes that the points 
-// are ordered clockwise or counter-clockwise
-func area(p []Point) float64 {
-	if len(p) <= 2 {
-		return 0.0
-	}
-
-	sum := 0.0
-	for i := 0; i < len(p); i++ {
-		current := p[i]
-		next := p[(i+1) % len(p)]
-		sum += current.X * next.Y - current.Y * next.X
-	}
-
-	return math.Abs(sum / 2.0)
+	return poly
 }
 
 // Given two points, this method calculates the Y value of a point 
