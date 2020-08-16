@@ -41,7 +41,7 @@ func read_standard_input() {
 		err = json.Unmarshal([]byte(text), &points)
 
 		if err == nil {
-			write_file(points, fmt.Sprintf("%d.json", len(points)))
+			// write_file(points, fmt.Sprintf("%d.json", len(points)))
 			hull := Calculate_hull(points)
 			fmt.Println(area(hull))
 		}	

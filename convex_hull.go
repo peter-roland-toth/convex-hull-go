@@ -3,7 +3,7 @@ package main
 import (
 	"sort"
 	// "math"
-	"fmt"
+	// "fmt"
 	// "encoding/json"
 	// "io/ioutil"
 )
@@ -14,9 +14,7 @@ type Point struct {
 }
 
 type Polygon struct {
-	left Point
 	left_index int
-	right Point
 	right_index int
 	points []Point
 }
@@ -53,8 +51,6 @@ func preprocess(p []Point) []Point {
 		}
 	}
 
-	fmt.Println(len(result))
-
 	return result
 }
 
@@ -63,11 +59,8 @@ func preprocess(p []Point) []Point {
 // the points sent to the method.
 // The method assumes that the input is sorted along the X-axis
 func convex_hull(p []Point) Polygon {
-	if len(p) == 0 {
-		return Polygon{Point{0.0, 0.0}, 0, Point{0.0, 0.0}, 0, []Point{}}
-	}
-	if len(p) == 1 {
-		return Polygon{p[0], 0, p[0], 0, p}
+	if len(p) <= 1 {
+		return Polygon{0, 0, p}
 	}
 
 	// partitioning the points into a left and right region
@@ -126,10 +119,11 @@ func merge(p1, p2 Polygon) Polygon {
 	// 	}
 	// }
 
-	max_i := p1.right.X
-	min_j := p2.left.X
 	i := p1.right_index
 	j := p2.left_index
+	max_i := p1.points[i].X
+	min_j := p2.points[j].X
+	
 
 	// calculating the position of the vertical line between the two regions
 	// it doesn't have to be exactly in the middle, but it's important that none
@@ -204,8 +198,8 @@ func merge(p1, p2 Polygon) Polygon {
 		result = append(result, p2_points[upper_j])
 
 		if p2_points[upper_j].X > right.X {
-			right = p2_points[upper_j]
 			right_index = len(result) - 1
+			right = p2_points[upper_j]
 		}
 	}
 
@@ -213,14 +207,14 @@ func merge(p1, p2 Polygon) Polygon {
 		result = append(result, p1_points[lower_i])
 
 		if p1_points[lower_i].X < left.X {
-			left = p1_points[lower_i]
 			left_index = len(result) - 1
+			left = p1_points[lower_i]
 		}
 
 		lower_i = (lower_i + 1) % len(p1_points)		
 	}
 
-	poly := Polygon{left, left_index, right, right_index, result}
+	poly := Polygon{left_index, right_index, result}
 
 	return poly
 }

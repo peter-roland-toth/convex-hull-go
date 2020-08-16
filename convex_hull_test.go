@@ -9,7 +9,7 @@ func TestMergeWithNullPolygons(t *testing.T) {
 	p1 := []Point{}
 	p2 := []Point{}
 
-	result := merge(Polygon{Point{}, 0, Point{}, 0, p1}, Polygon{Point{}, 0, Point{}, 0, p2})
+	result := merge(Polygon{0, 0, p1}, Polygon{0, 0, p2})
 
 	if len(result.points) != 0 {
 		t.Errorf("Result should be null polygon")
@@ -20,23 +20,19 @@ func TestMergeWithTwoPoints(t *testing.T) {
 	left_point := Point{-1.0, 0.0}
 	right_point := Point{1.0, 0.0}
 
-	p1 := Polygon{left_point, 0, left_point, 0, []Point{left_point}}
-	p2 := Polygon{right_point, 0, right_point, 0, []Point{right_point}}
+	p1 := Polygon{0, 0, []Point{left_point}}
+	p2 := Polygon{0, 0, []Point{right_point}}
 
 	result := merge(p1, p2)
 
 	if len(result.points) != 2 {
 		t.Errorf("Polygon should have two points")
 	}
-	if result.left != left_point {
-		t.Errorf("Wrong left point")
-	}
+
 	if result.left_index != 0 {
 		t.Errorf("Wrong left index")
 	}
-	if result.right != right_point {
-		t.Errorf("Wrong right point")
-	}
+	
 	if result.right_index != 1 {
 		t.Errorf("Wrong right index")
 	}
@@ -48,8 +44,8 @@ func TestMergeFourPoints(t *testing.T) {
 	right_1 := Point{135.0070591614026, 93.81656585134968} 
 	right_2 := Point{157.8799203366949, 69.65367939960399}
 
-	left := Polygon{left_1, 1, left_2, 0, []Point{left_2, left_1}}
-	right := Polygon{right_1, 0, right_2, 1, []Point{right_1, right_2}}
+	left := Polygon{1, 0, []Point{left_2, left_1}}
+	right := Polygon{0, 1, []Point{right_1, right_2}}
 
 	result := merge(left, right)
 
@@ -66,15 +62,10 @@ func TestMergeFourPoints(t *testing.T) {
 		}
 	}
 
-	if result.left != left_1 {
-		t.Errorf("Wrong left point")
-	}
 	if result.left_index != 0 {
 		t.Errorf("Wrong left index")
 	}
-	if result.right != right_2 {
-		t.Errorf("Wrong right point")
-	}
+
 	if result.right_index != 1 {
 		t.Errorf("Wrong right index")
 	}
@@ -182,8 +173,8 @@ func TestMergingMultiplePoints(t *testing.T) {
 	right_3 := Point{8.0, 4.5}
 	right_4 := Point{2.0, -10.0}
 
-	p1 := Polygon{left_1, 0, left_3, 2, []Point{left_1, left_2, left_3, left_4}}
-	p2 := Polygon{right_1, 0, right_3, 2, []Point{right_1, right_2, right_3, right_4}}
+	p1 := Polygon{0, 2, []Point{left_1, left_2, left_3, left_4}}
+	p2 := Polygon{0, 2, []Point{right_1, right_2, right_3, right_4}}
 
 	result := merge(p1, p2)
 
@@ -200,15 +191,10 @@ func TestMergingMultiplePoints(t *testing.T) {
 		}
 	}
 
-	if result.left != left_1 {
-		t.Errorf("Wrong left point %v", result.left)
-	}
 	if result.left_index != 4 {
 		t.Errorf("Wrong left index %v", result.left_index)
 	}
-	if result.right != right_3 {
-		t.Errorf("Wrong right point %v", result.right)
-	}
+
 	if result.right_index != 2 {
 		t.Errorf("Wrong right index %v", result.right_index)
 	}
